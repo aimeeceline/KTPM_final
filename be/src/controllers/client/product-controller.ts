@@ -1,7 +1,7 @@
 
 import { prisma } from 'config/client'
 import { Response, Request } from 'express'
-import { countTotalProductClientPages, fetchAllProducts, fetchProductsPaginated, getProductById, getAllCategory, getProductInCart } from 'services/client/product-service';
+import { countTotalProductClientPages, fetchAllProducts, fetchProductsPaginated, getProductById, getAllCategory, getProductInCart, addProductToCart } from 'services/client/product-service';
 
 const getAllProducts = async (req: Request, res: Response) => {
     try {
@@ -182,7 +182,34 @@ const getCart = async (req: Request, res: Response) => {
 
 }
 
+// -------------------- ADD PRODUCT TO CART -------------------------------
+
+const postAddProductToCart = async (req: Request, res: Response) => {
+    const id_variant = req.params.id;
+    const user = req.user;
+    try {
+
+        await addProductToCart(1, +id_variant, user);
+
+
+        res.status(201).json({
+            success: true,
+            message: "Thêm sản phẩm vào giỏ hàng thành công",
+        });
+    }
+    catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra khi thêm sản phẩm",
+            error,
+        });
+
+    }
+
+}
+
+
 export {
-    getAllProducts, getProductsPaginate, getDetailProduct, filterProducts, getCategory, getCart
+    getAllProducts, getProductsPaginate, getDetailProduct, filterProducts, getCategory, getCart, postAddProductToCart
 
 }

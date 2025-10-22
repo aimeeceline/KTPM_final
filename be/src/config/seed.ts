@@ -1,5 +1,6 @@
 import { prisma } from "config/client"
-import { hashPassword } from "services/client/user-service";
+import { hashPassword } from "services/auth.service";
+
 
 const initDatabase = async () => {
 

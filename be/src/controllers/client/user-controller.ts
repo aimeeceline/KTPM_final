@@ -1,7 +1,7 @@
 import { User } from "@prisma/client";
 import { Request, Response } from "express";
 import { prisma } from 'config/client'
-import { fetchWishList } from "services/client/user-service";
+import { fetchWishList, handlePostWishlist } from "services/client/user-service";
 
 const postUpdateProfile = async (req: Request, res: Response) => {
   try {
@@ -50,7 +50,19 @@ const getWishlist = async (req: Request, res: Response) => {
   }
 }
 
+const postWishlist = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const productId = +req.params.productId;
+    const result = await handlePostWishlist(userId, productId);
+    return res.status(200).json(result);
+  } catch (err: any) {
+    return res.status(500).json({ message: "Lỗi hệ thống", error: err.message });
+  }
+};
+
+
 
 export {
-  postUpdateProfile,getWishlist
+  postUpdateProfile,getWishlist,postWishlist
 }

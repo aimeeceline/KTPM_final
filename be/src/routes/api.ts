@@ -1,4 +1,4 @@
-import { filterProducts, getAllProducts, getDetailProduct, getProductsPaginate, getCategory, getCart, postAddProductToCart, deleteProductInCart, postHandleCartToCheckOut, getCheckOutPage, postPlaceOrder ,getCartCount,postAddToCartFromDetailPage, getOrderHistory} from 'controllers/client/product-controller'
+import { filterProducts, getAllProducts, getDetailProduct, getProductsPaginate, getCategory, getCart, postAddProductToCart, deleteProductInCart, postHandleCartToCheckOut, getCheckOutPage, postPlaceOrder ,getCartCount,postAddToCartFromDetailPage, getOrderHistory, putCancelOrder} from 'controllers/client/product-controller'
 import express, { Express } from 'express'
 import { verifyToken } from 'src/middleware/verifyToken'
 const router = express.Router()
@@ -28,6 +28,7 @@ const api = (app: Express) => {
 
      //order
     router.get("/order-history", verifyToken, getOrderHistory);
+    router.put("/cancel-order/:orderId", verifyToken, putCancelOrder);
 
 
     app.use("/api", router)

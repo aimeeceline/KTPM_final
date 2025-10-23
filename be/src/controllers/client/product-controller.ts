@@ -282,26 +282,25 @@ const getCheckOutPage = async (req: Request, res: Response) => {
 };
 const postPlaceOrder = async (req: Request, res: Response) => {
     try {
-        const userId = req.user.id
-        const { receiverName, receiverAddress, receiverPhone, totalAmount } = req.body;
+        const userId = req.user.id;
+        const { receiverName, receiverAddress, receiverPhone, totalAmount, paymentMethod, items } = req.body;
 
-        const message = await handlePlaceOrder(userId, receiverName, receiverAddress, receiverPhone, totalAmount);
-        if (message) {
-            return res.status(400).json({
-                success: false,
-                message: message,
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            message: "Đặt hàng thành công",
+        const result = await handlePlaceOrder(
+            userId,
+            receiverName,
+            receiverAddress,
+            receiverPhone,
+            totalAmount,
+            paymentMethod,
+            items
+        );
 
-        });
+        return res.status(200).json(result);
     } catch (error: any) {
         return res.status(500).json({
             success: false,
-            message: "Có lỗi xảy ra khi đặt hàng",
-            error: error.message
+            message: "An error occurred while placing the order",
+            error: error.message,
         });
     }
 };

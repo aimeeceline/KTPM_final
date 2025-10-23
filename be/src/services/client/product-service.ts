@@ -252,116 +252,101 @@ const updateCartDetailBeforeCheckout = async (
         }
     })
 };
+
 //place order
 const handlePlaceOrder = async (
     userId: number,
     receiverName: string,
     receiverAddress: string,
     receiverPhone: string,
-    totalAmount: number
+    totalAmount: number,
+    paymentMethod: string,
+    items: { variantId: number; quantity: number; price: number }[]
 ) => {
+    if (!items || items.length === 0) {
+        return { success: false, message: "No items selected for checkout" };
+    }
+
     try {
-        //tạo transaction
         await prisma.$transaction(async (tx) => {
-            const cart = await tx.cart.findUnique({
-                where: {
-                    user_id: userId
-                },
-                include: {
-                    items: true
+            // Kiểm tra tồn kho trước
+            for (const i of items) {
+                const inventory = await tx.inventory.findFirst({
+                    where: { product_variant_id: i.variantId },
+                    include: { variant: { include: { product: true } } },
+                });
+
+                if (!inventory) {
+                    throw new Error(`Inventory not found for variant ${i.variantId}`);
                 }
-            })
 
-            if (!cart) {
-                throw new Error("Giỏ hàng không tồn tại");
+                if (inventory.stock < i.quantity) {
+                    throw new Error(
+                        `Product ${inventory.variant.product.name} (${inventory.variant.color} ${inventory.variant.storage}) is out of stock. Only ${inventory.stock} left.`
+                    );
+                }
             }
 
-
-            if (cart.items.length === 0) {
-                throw new Error("Giỏ hàng trống, không thể đặt hàng");
-            }
-
-
-
-            //create order + orderItems
-            const dataOrderItem = cart?.items?.map(
-                item => ({
-                    variant_id: item.variant_id,
-                    quantity: item.quantity,
-                    price: item.price
-                })
-            )
+            //  Nếu đủ stock → tạo order
             await tx.order.create({
                 data: {
                     user_id: userId,
                     total_amount: totalAmount,
                     status: "PENDING",
-                    paymentMethod: "COD",
+                    paymentMethod,
                     paymentStatus: "PAYMENT_UNPAID",
                     receiverName,
                     receiverAddress,
                     receiverPhone,
                     items: {
-                        create: dataOrderItem
-                    }
-
-                }
-            })
-
-            //delete cart + cartItems
-            await tx.cartItem.deleteMany({
-                where: {
-                    cart_id: cart.id
-                }
-            })
-            await tx.cart.delete({
-                where: {
-                    id: cart.id
-                }
-            })
-
-            //check variant
-            for (let i = 0; i < cart.items.length; i++) {
-                const variantId = cart.items[i].variant_id
-                const variant = await tx.productVariant.findUnique(
-                    {
-                        where: {
-                            id: variantId
-                        }
-                        , include: {
-                            product: true
-                        }
-                    })
-
-
-                if (!variant || variant.stock < cart.items[i].quantity) {
-                    throw new Error(`Sản phẩm ${variant?.product.name} màu ${variant?.color} không tồn tại hoặc không đủ số lượng.`)
-                }
-
-                //đủ spham thì trừ stock
-                await tx.productVariant.update({
-                    where: {
-                        id: variantId
+                        create: items.map(i => ({
+                            variant_id: i.variantId,
+                            quantity: i.quantity,
+                            price: i.price,
+                        })),
                     },
-                    data: {
-                        stock: {
-                            decrement: cart.items[i].quantity
-                        },
-                        sold: {
-                            increment: cart.items[i].quantity
-                        }
-                    }
-                })
+                },
+            });
 
+            // Trừ kho + ghi log
+            for (const i of items) {
+                const inventory = await tx.inventory.findFirst({
+                    where: { product_variant_id: i.variantId },
+                });
+
+                if (inventory) {
+                    await tx.inventory.update({
+                        where: { id: inventory.id },
+                        data: {
+                            stock: { decrement: i.quantity },
+                            sold: { increment: i.quantity },
+                        },
+                    });
+
+                    await tx.inventoryLog.create({
+                        data: {
+                            product_variant_id: i.variantId,
+                            action_type: "ORDER",
+                            quantity: i.quantity,
+                            note: "Stock decreased after order placement",
+                            created_by: userId,
+                        },
+                    });
+                }
             }
 
+            // Xoá các cartItem liên quan
+            await tx.cartItem.deleteMany({
+                where: {
+                    cart: { user_id: userId },
+                    variant_id: { in: items.map(i => i.variantId) },
+                },
+            });
+        });
 
-        }
-        )
-        return "";
-    }
-    catch (error: any) {
-        return error.message
+        return { success: true, message: "Order placed successfully" };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Failed to place order" };
     }
 };
 

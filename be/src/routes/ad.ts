@@ -2,7 +2,7 @@ import { getUsers,disabledUser,postUpdateUser } from 'controllers/admin/user-con
 import express, { Express } from 'express'
 import fileUploadMiddleware from 'src/middleware/multer'
 import { verifyToken } from 'src/middleware/verifyToken'
-import { getOrders} from 'controllers/admin/order-controller' 
+import { getOrders,updateStatusOrder} from 'controllers/admin/order-controller' 
 
 const router = express.Router()
 
@@ -15,6 +15,7 @@ const webRoutes = (app: Express) => {
 
     //order
     router.get("/admin/orders", verifyToken, getOrders)
+    router.put("/admin/orders/:orderId", verifyToken, updateStatusOrder)
 
     app.use("/", router)
 }

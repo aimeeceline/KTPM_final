@@ -1,5 +1,5 @@
-import { filterProducts, getAllProducts, getDetailProduct, getProductsPaginate, getCategory, getCart, postAddProductToCart, deleteProductInCart, postHandleCartToCheckOut, getCheckOutPage, postPlaceOrder ,getCartCount,postAddToCartFromDetailPage, getOrderHistory, putCancelOrder} from 'controllers/client/product-controller'
-import { postUpdateProfile} from 'controllers/client/user-controller'
+import { filterProducts, getAllProducts, getDetailProduct, getProductsPaginate, getCategory, getCart, postAddProductToCart, deleteProductInCart, postHandleCartToCheckOut, getCheckOutPage, postPlaceOrder, getCartCount, postAddToCartFromDetailPage, getOrderHistory, putCancelOrder } from 'controllers/client/product-controller'
+import { getWishlist, postUpdateProfile } from 'controllers/client/user-controller'
 
 import express, { Express } from 'express'
 import { verifyToken } from 'src/middleware/verifyToken'
@@ -29,17 +29,20 @@ const api = (app: Express) => {
     router.get("/checkout", verifyToken, getCheckOutPage); //lấy thông tin giỏ hàng của user chuẩn bị thanh toán
     router.post("/place-order", verifyToken, postPlaceOrder); // thực hiện đặt hàng
 
-     //order
+    //order
     router.get("/order-history", verifyToken, getOrderHistory);
     router.put("/cancel-order/:orderId", verifyToken, putCancelOrder);
 
-      //user
+    //user
     router.put(
         "/profile",
         verifyToken,
         fileUploadMiddleware("avatar", "avatar"), // field name = "avatar", lưu vào public/avatar
         postUpdateProfile
     );
+
+     //wishlist 
+    router.get("/wishlist", verifyToken, getWishlist);
 
     app.use("/api", router)
 

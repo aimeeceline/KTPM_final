@@ -1,7 +1,10 @@
 import { filterProducts, getAllProducts, getDetailProduct, getProductsPaginate, getCategory, getCart, postAddProductToCart, deleteProductInCart, postHandleCartToCheckOut, getCheckOutPage, postPlaceOrder ,getCartCount,postAddToCartFromDetailPage, getOrderHistory, putCancelOrder} from 'controllers/client/product-controller'
+import { postUpdateProfile} from 'controllers/client/user-controller'
+
 import express, { Express } from 'express'
 import { verifyToken } from 'src/middleware/verifyToken'
 const router = express.Router()
+import fileUploadMiddleware from 'src/middleware/multer'
 
 const api = (app: Express) => {
 
@@ -30,6 +33,13 @@ const api = (app: Express) => {
     router.get("/order-history", verifyToken, getOrderHistory);
     router.put("/cancel-order/:orderId", verifyToken, putCancelOrder);
 
+      //user
+    router.put(
+        "/profile",
+        verifyToken,
+        fileUploadMiddleware("avatar", "avatar"), // field name = "avatar", lưu vào public/avatar
+        postUpdateProfile
+    );
 
     app.use("/api", router)
 
